@@ -39,14 +39,10 @@ Prints id to the console.
 
 Returns money back if the specified exchange request is expired (by default, could be requested after 5 minutes since publication).
 
-#### expired(const uint64_t &id)
-
-Returns money back if the specified exchange request is expired (by default, could be requested after 5 minutes since publication).
-
-#### void close(const uint64_t &id)
+#### close(const uint64_t &id)
 
 Marks exchange request as closed / exchanged. Requires contract authorization for action, as update concerned internal.
 
-#### void transfer(const account_name duc_master, const account_name to, const asset &quantity, const std::string &memo)
+#### transfer(const account_name duc_master, const account_name to, const asset &quantity, const std::string &memo)
 
 Transfer quantity of asset from external blockchains to user `to` from token's issuer `duc_master`. Requires authorization/permissions for duc_master.
