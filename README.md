@@ -8,9 +8,10 @@
 
 2. Issue to user.
 
-    cleos push action eosio.token issue '[ "user", "100.0000 DUCAT", "" ]' -p ducat.exch
-    cleos get currency balance eosio.token user DUC # get_balance
-
+```
+cleos push action eosio.token issue '[ "user", "100.0000 DUCAT", "" ]' -p ducat.exch
+cleos get currency balance eosio.token user DUC # get_balance
+```
 
 3. Grant permissions for token transfers.
 
