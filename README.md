@@ -46,3 +46,5 @@ Marks exchange request as closed / exchanged. Requires contract authorization fo
 #### transfer(const account_name duc_master, const account_name to, const asset &quantity, const std::string &memo)
 
 Transfer quantity of asset from external blockchains to user `to` from token's issuer `duc_master`. Requires authorization/permissions for duc_master.
+
+## TODO: Add online manipulations (EOS, Scatter) and link to the video
