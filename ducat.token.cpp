@@ -7,73 +7,122 @@
 #include <eosiolib/contract.hpp>
 #include <eosiolib/crypto.h>
 
-using eosio::indexed_by;
-using eosio::const_mem_fun;
-using eosio::asset;
-using eosio::permission_level;
 using eosio::action;
-using eosio::print;
+using eosio::asset;
+using eosio::const_mem_fun;
+using eosio::indexed_by;
 using eosio::name;
+using eosio::permission_level;
+using eosio::print;
 
-class DUCExchanger : public eosio::contract {
-   public:
-
-      DUCExchanger(account_name self)
-      :eosio::contract(self),
+class DUCExchanger : public eosio::contract
+{
+public:
+  DUCExchanger(account_name self)
+      : eosio::contract(self),
         exoffers(_self, _self)
-      {}
+  {}
 
-      //@abi action
-      void exchange( const account_name from, const asset& quantity, const std::string& to_chain ) { 
-        //  require_auth( from );
+  const auto EXPIRATION_TIME = 5 * 60;
 
-         eosio_assert( to_chain == "ETH" || to_chain == "NEO" || to_chain == "eth" || to_chain == "neo",
-                       "wrong target chain to export" );
-         eosio_assert( quantity.is_valid(), "invalid quantity" );
-         eosio_assert( quantity.amount > 0, "must deposit positive quantity" );
+  //@abi action
+  void exchange(const account_name from, const asset &quantity, const std::string &to_chain)
+  {
+    eosio_assert(quantity.is_valid(), "invalid quantity");
+    eosio_assert(quantity.amount > 0, "must deposit positive quantity");
 
-         auto itr = exoffers.find(from);
-         if( itr == exoffers.end() ) {
-            itr = exoffers.emplace(_self, [&](auto& offer){
-               offer.owner = from;
-            });
-         }
+    action(
+        permission_level{from, N(active)},
+        N(eosio.token), N(transfer),
+        std::make_tuple(from, _self, quantity, to_chain))
+        .send();
 
-         action(
-            permission_level{ from, N(active) },
-            N(eosio.token), N(transfer),
-            std::make_tuple(from, _self, quantity, to_chain)
-         ).send();
+    auto exchange_offer_itr = exoffers.emplace(from, [&](auto &offer) {
+      offer.id = exoffers.available_primary_key();
+      offer.duc_balance = quantity;
+      offer.owner = from;
+      offer.pubtime = eosio::time_point_sec(now());
+    });
+    print("Your exchange request has id: " + std::to_string(exchange_offer_itr->id));
+  }
 
-         exoffers.modify( itr, 0, [&]( auto& offer ) {
-            offer.duc_balance = quantity;
-            offer.to_chain = to_chain;
-            offer.pubtime = eosio::time_point_sec(now());
-         });
-      }
+  //@abi action
+  void expired(const uint64_t &id)
+  {
+    auto exchange_offer_itr = exoffers.find( id );
+    eosio_assert( exchange_offer_itr != exoffers.end(), "unknown exchange request id" );
+    eosio_assert( exchange_offer_itr->pubtime != eosio::time_point_sec(0)
+                  && eosio::time_point_sec(now()) > exchange_offer_itr->pubtime + EXPIRATION_TIME,
+                  "exchange not expired" );
 
-   private:
+    action(
+        permission_level{_self, N(active)},
+        N(eosio.token), N(transfer),
+        std::make_tuple(_self, exchange_offer_itr->owner, quantity, exchange_offer_itr->to_chain))
+        .send();
 
-      //@abi table exoffer i64
-      struct exoffer {
-         exoffer( account_name o = account_name() ):owner(o) {}
+    exoffers.modify( exchange_offer_itr, 0, [&]( auto& offer ) {
+        offer.to_chain = "Failed due to expiration";
+        offer.duc_balance -= offer.duc_balance; // set to 0
+    });
+  }
 
-         account_name          owner;
-         asset                 duc_balance;
-         std::string           to_chain;
-         eosio::time_point_sec pubtime;
+  //@abi action
+  void close(const uint64_t &id)
+  {
+    require_auth( _self );
+    auto exchange_offer_itr = exoffers.find( id );
+    eosio_assert( exchange_offer_itr != exoffers.end(), "unknown exchange request id" );
 
-         bool is_empty() const { return !( duc_balance.amount ); }
+    exoffers.modify( exchange_offer_itr, 0, [&]( auto& offer ) {
+        offer.exchanged = true;
+    });
+    // Also, could be erased:
+    // exoffers.erase( exchange_offer_itr );
+  }
 
-         uint64_t primary_key() const { return owner; }
-         uint32_t by_pubtime() const { return pubtime.sec_since_epoch(); }
+  /**
+   * Transfer tokens from specified `duc_master` account to `to` account.
+   * Requires permissions for actor.
+   */
+  //@abi action
+  void transfer(const account_name duc_master, const account_name to,
+                const asset &quantity, const std::string &memo)
+  {
+    eosio_assert(quantity.is_valid(), "invalid quantity");
+    eosio_assert(quantity.amount > 0, "must deposit positive quantity");
 
-         EOSLIB_SERIALIZE( exoffer, (owner)(duc_balance)(to_chain)(pubtime) )
-      };
+    action(
+        permission_level{duc_master, N(active)},
+        N(eosio.token), N(transfer),
+        std::make_tuple(duc_master, to, quantity, memo))
+        .send();
+  }
 
-      typedef eosio::multi_index< N(exoffer), exoffer> exoffer_index;
+private:
+  //@abi table exoffer i64
+  struct exoffer
+  {
+    exoffer(account_name o = account_name()) : owner(o) {}
 
-      exoffer_index     exoffers;
+    uint64_t              id;
+    account_name          owner;
+    asset                 duc_balance;
+    std::string           to_chain;
+    eosio::time_point_sec pubtime;
+    bool                  exchanged = false;
+
+    bool is_empty() const { return !(duc_balance.amount); }
+
+    uint64_t primary_key() const { return id; }
+    uint32_t by_pubtime() const { return pubtime.sec_since_epoch(); }
+
+    EOSLIB_SERIALIZE(exoffer, (owner)(duc_balance)(to_chain)(pubtime))
+  };
+
+  typedef eosio::multi_index<N(exoffer), exoffer> exoffer_index;
+
+  exoffer_index exoffers;
 };
 
-EOSIO_ABI( DUCExchanger, (exchange) )
+EOSIO_ABI(DUCExchanger, (exchange)(close)(transfer)(expired))
