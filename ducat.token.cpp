@@ -23,7 +23,7 @@ public:
         exoffers(_self, _self)
   {}
 
-  const auto EXPIRATION_TIME = 5 * 60;
+  const static auto EXPIRATION_TIME = 5 * 60;
 
   //@abi action
   void exchange(const account_name from, const asset &quantity, const std::string &to_chain)
@@ -43,7 +43,8 @@ public:
       offer.owner = from;
       offer.pubtime = eosio::time_point_sec(now());
     });
-    print("Your exchange request has id: " + std::to_string(exchange_offer_itr->id));
+    print("Your exchange request has id: ");
+    printn(exchange_offer_itr->id));
   }
 
   //@abi action
@@ -58,7 +59,7 @@ public:
     action(
         permission_level{_self, N(active)},
         N(eosio.token), N(transfer),
-        std::make_tuple(_self, exchange_offer_itr->owner, quantity, exchange_offer_itr->to_chain))
+        std::make_tuple(_self, exchange_offer_itr->owner, exchange_offer_itr->duc_balance, exchange_offer_itr->to_chain))
         .send();
 
     exoffers.modify( exchange_offer_itr, 0, [&]( auto& offer ) {
