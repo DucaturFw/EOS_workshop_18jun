@@ -11,7 +11,6 @@ const config = {
   verbose: false, // API activity
   sign: true
 }
-const eos = Eos(config);
 
 class EOSActionCall extends React.Component {
   constructor(props) {
@@ -41,7 +40,15 @@ class EOSActionCall extends React.Component {
     this.sendTransaction = this.sendTransaction.bind(this);
   }
 
+  componentWillReceiveProps(props) {
+    this.setState(state => ({
+      ...state,
+      ...props
+    }))
+  }
+
   sendTransaction() {
+    const eos = Eos(this.state.config);
     if (this.state.type == 'api') {
       const action = this.state.action, data = JSON.parse(this.state.data);
       eos[action](data).then(res => {
