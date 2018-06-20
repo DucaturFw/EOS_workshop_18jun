@@ -103,7 +103,7 @@ public:
 
 private:
   //@abi table exchanges i64
-  struct exchange
+  struct exchange_obj
   {
     uint64_t              id;
     account_name          from;
@@ -117,10 +117,10 @@ private:
 
     bool is_empty() const { return !(amount.amount); }
 
-    EOSLIB_SERIALIZE(exchange, (id)(from)(to)(amount)(blockchain)(pubtime)(txid))
+    EOSLIB_SERIALIZE(exchange_obj, (id)(from)(to)(amount)(blockchain)(pubtime)(txid))
   };
 
-  typedef eosio::multi_index<N(exchange), exchange> exchange_index;
+  typedef eosio::multi_index<N(exchange_obj), exchange_obj> exchange_index;
 
   exchange_index exchanges;
 };
