@@ -2,28 +2,28 @@
 
 # Token exchange
 
-N. Create token.
+1. Create token.
 
 `cleos push action eosio.token create '[ "ducat.exch", "7000000000.0000 DUCAT"]' -p eosio.token`
 
-N. Issue to user.
+1. Issue to user.
 
 ```
 cleos push action eosio.token issue '[ "user", "100.0000 DUCAT", "" ]' -p ducat.exch
 cleos get currency balance eosio.token user DUC # get_balance
 ```
 
-N. Grant permissions for token transfers.
+1. Grant permissions for token transfers.
 
 `cleos set account permission user active '{"threshold": 1,"keys": [{"key": "${EOS_PUBKEY}","weight": 1}],"accounts": [{"permission":{"actor":"ducat.exch","permission":"eosio.code"},"weight":1}]}' owner -p user@active`
 
-N. Call exchange from user account.
+1. Call exchange from user account.
 
 `cleos push action ducat.exch exchange '["user", "100.0000 DUCAT", "ETH"]' -p user`
 
-N. ???
+1. ???
 
-N. See token exchange request in table.
+1. See token exchange request in table.
 
 `cleos get table ducat.exch ducat.exch exoffers`
 

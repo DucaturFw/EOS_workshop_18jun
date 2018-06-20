@@ -116,7 +116,7 @@ private:
 
     bool is_empty() const { return !(amount.amount); }
 
-    EOSLIB_SERIALIZE(exoffer, (id)(from)(to)(amount)(blockchain)(pubtime)(exchanged))
+    EOSLIB_SERIALIZE(exoffer, (id)(from)(to)(amount)(blockchain)(pubtime)(txid))
   };
 
   typedef eosio::multi_index<N(exoffer), exoffer> exoffer_index;
