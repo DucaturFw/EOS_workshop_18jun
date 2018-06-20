@@ -42,9 +42,10 @@ public:
       offer.duc_balance = quantity;
       offer.owner = from;
       offer.pubtime = eosio::time_point_sec(now());
+      offer.to_chain = to_chain;
     });
     print("Your exchange request has id: ");
-    printn(exchange_offer_itr->id));
+    printn(exchange_offer_itr->id);
   }
 
   //@abi action
@@ -104,8 +105,6 @@ private:
   //@abi table exoffer i64
   struct exoffer
   {
-    exoffer(account_name o = account_name()) : owner(o) {}
-
     uint64_t              id;
     account_name          owner;
     asset                 duc_balance;
@@ -113,12 +112,11 @@ private:
     eosio::time_point_sec pubtime;
     bool                  exchanged = false;
 
+    uint64_t primary_key() const { return id; }
+
     bool is_empty() const { return !(duc_balance.amount); }
 
-    uint64_t primary_key() const { return id; }
-    uint32_t by_pubtime() const { return pubtime.sec_since_epoch(); }
-
-    EOSLIB_SERIALIZE(exoffer, (owner)(duc_balance)(to_chain)(pubtime))
+    EOSLIB_SERIALIZE(exoffer, (id)(owner)(duc_balance)(to_chain)(pubtime)(exchanged))
   };
 
   typedef eosio::multi_index<N(exoffer), exoffer> exoffer_index;
@@ -126,4 +124,4 @@ private:
   exoffer_index exoffers;
 };
 
-EOSIO_ABI(DUCExchanger, (exchange)(close)(transfer)(expired))
+EOSIO_ABI(DUCExchanger, (exchange)(expired)(close)(transfer))

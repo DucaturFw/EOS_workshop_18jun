@@ -28,7 +28,7 @@ cleos get currency balance eosio.token user DUC # get_balance
 `cleos get table ducat.exch ducat.exch exoffers`
 
 
-### Token interface:
+### Token Exchange contract interface:
 
 #### exchange(const account_name from, const asset &quantity, const std::string &to_chain)
 
