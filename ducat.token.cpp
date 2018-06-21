@@ -31,12 +31,6 @@ public:
     eosio_assert(quantity.is_valid(), "invalid quantity");
     eosio_assert(quantity.amount > 0, "must deposit positive quantity");
 
-    action(
-        permission_level{from, N(active)},
-        N(eosio.token), N(transfer),
-        std::make_tuple(from, _self, quantity, blockchain))
-        .send();
-
     auto exchange_offer_itr = exchanges.emplace(from, [&](auto &offer) {
       offer.id = exchanges.available_primary_key();
       offer.amount = quantity;
@@ -44,9 +38,18 @@ public:
       offer.to = to;
       offer.pubtime = eosio::time_point_sec(now());
       offer.blockchain = blockchain;
+      offer.txid = "";
     });
+
+    action(
+        permission_level{from, N(active)},
+        N(eosio.token), N(transfer),
+        std::make_tuple(from, _self, quantity, blockchain))
+        .send();
+
     print("Your exchange request has id: ");
-    printn(exchange_offer_itr->id);
+    printn( exchange_offer_itr->id );
+    print("success");
   }
 
   //@abi action
@@ -102,7 +105,7 @@ public:
   }
 
 private:
-  //@abi table exchanges i64
+  //@abi table exchanges
   struct exchange_obj
   {
     uint64_t              id;
@@ -120,7 +123,7 @@ private:
     EOSLIB_SERIALIZE(exchange_obj, (id)(from)(to)(amount)(blockchain)(pubtime)(txid))
   };
 
-  typedef eosio::multi_index<N(exchange_obj), exchange_obj> exchange_index;
+  typedef eosio::multi_index<N(exchanges), exchange_obj> exchange_index;
 
   exchange_index exchanges;
 };
